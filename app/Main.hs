@@ -1,6 +1,9 @@
 module Main where
 
-import Data.UBJSON
+import Prelude hiding (Monoid, mappend, mempty)
+
+import Data.Ubjson
+
 
 main :: IO ()
-main = someFunc
+main = print "hello!"

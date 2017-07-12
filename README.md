@@ -1,3 +1,2 @@
-# hs-ubjson
-Universal Binary JSON for Haskell
-
+# ubjson
+Universal Binary JSON library for Haskell
