@@ -37,8 +37,9 @@ instance Ubjson Int where
 
 instance Ubjson T.Text where
   pack x =
-    let len = T.length x
-    in charUtf8 'S' <> pack len <> encodeUtf8Builder x
+    let builder = encodeUtf8Builder x
+        len = (fromIntegral $ L.length $ toLazyByteString builder) :: Int
+    in charUtf8 'S' <> pack len <> builder
 
 instance Ubjson a => Ubjson (Maybe a) where
   pack x = case x of
@@ -46,9 +47,8 @@ instance Ubjson a => Ubjson (Maybe a) where
     Just y  -> pack y
 
 instance (Ubjson a) => Ubjson [a] where
-  pack []     = undefined
-  pack (x:xs) = pack x <> pack xs
-
+  pack [] = charUtf8 '[' <> charUtf8 ']'
+  pack xs = charUtf8 '[' <> mconcat (map pack xs) <> charUtf8 ']'
 
 encode :: Ubjson a => a -> L.ByteString
 encode x = toLazyByteString $ pack x
