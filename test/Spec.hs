@@ -16,11 +16,11 @@ main = hspec $ do
   describe "Data.Ubjson.encode" $ do
 
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    -- Noop
+    -- UbjNoop
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    it "should encode Noop as Ubjson noop" $ do
-      let actual = (L.unpack $ encode Noop)
+    it "should encode UbjNoop as Ubjson noop" $ do
+      let actual = (L.unpack $ encode UbjNoop)
       actual `shouldBe` expected [0x4E]
 
 
