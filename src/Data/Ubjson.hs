@@ -1,6 +1,10 @@
+{-# LANGUAGE ExistentialQuantification #-}
+
 module Data.Ubjson (
     encode
-  , UbjNoop (..)
+  , Noop (..)
+  , Null (..)
+  , Ubj  (..)
   )
 where
 
@@ -12,39 +16,45 @@ import           Data.ByteString.Builder --(Builder, toLazyByteString, charUtf8,
 import           Data.Monoid             --((<>))
 import           Data.Word               --(Word8)
 import           Data.Int                --(Int8, Int16)
+import           Data.Dynamic
 
 
-data UbjNoop = UbjNoop
+data Noop = Noop
 
-class UbjPack a where
+data Null = Null
+
+class ToUbjson a where
   pack :: a -> Builder
 
-instance UbjPack UbjNoop where
-  pack UbjNoop = charUtf8 'N'
+instance ToUbjson Null where
+  pack Null = charUtf8 'Z'
 
-instance UbjPack Bool where
+instance ToUbjson Noop where
+  pack Noop = charUtf8 'N'
+
+instance ToUbjson Bool where
   pack True  = charUtf8 'T'
   pack False = charUtf8 'F'
 
-instance UbjPack Char where
+instance ToUbjson Char where
   pack x = charUtf8 'C' <> charUtf8 x
 
-instance UbjPack Word8 where
+instance ToUbjson Word8 where
   pack x = charUtf8 'U' <> word8 x
 
-instance UbjPack Int8 where
+instance ToUbjson Int8 where
   pack x = charUtf8 'i' <> int8 x
 
-instance UbjPack Int16 where
+instance ToUbjson Int16 where
   pack x = charUtf8 'I' <> int16BE x
 
-instance UbjPack Int32 where
+instance ToUbjson Int32 where
   pack x = charUtf8 'l' <> int32BE x
 
-instance UbjPack Int64 where
+instance ToUbjson Int64 where
   pack x = charUtf8 'L' <> int64BE x
 
-instance UbjPack Int where
+instance ToUbjson Int where
   pack x
     | x >= 0     && x <= 2^8  -1 = pack ((fromIntegral x) :: Word8)
     | x >= -2^7  && x <= 2^7  -1 = pack ((fromIntegral x) :: Int8)
@@ -54,24 +64,27 @@ instance UbjPack Int where
     | otherwise                  = undefined
 
 
-instance UbjPack T.Text where
+instance ToUbjson T.Text where
   pack x =
     let builder = encodeUtf8Builder x
         len = (fromIntegral $ L.length $ toLazyByteString builder) :: Int
     in charUtf8 'S' <> pack len <> builder
 
-instance UbjPack a => UbjPack (Maybe a) where
+instance ToUbjson a => ToUbjson (Maybe a) where
   pack x = case x of
     Nothing -> charUtf8 'Z'
     Just y  -> pack y
 
-instance (UbjPack a) => UbjPack [a] where
+instance (ToUbjson a) => ToUbjson [a] where
   pack [] = charUtf8 '[' <> charUtf8 ']'
   pack xs = charUtf8 '[' <> mconcat (map pack xs) <> charUtf8 ']'
 
 
-encode :: UbjPack a => a -> L.ByteString
+data Ubj = forall a. ToUbjson a => Ubj a
+
+instance ToUbjson Ubj where
+  pack (Ubj a) = pack a
+
+
+encode :: ToUbjson a => a -> L.ByteString
 encode x = toLazyByteString $ pack x
-
-
-
