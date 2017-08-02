@@ -18,6 +18,7 @@ library
   exposed-modules:     Data.Ubjson
   build-depends:       base >= 4.7 && < 5
                      , bytestring
+                     , containers
                      , text
   default-language:    Haskell2010
 
@@ -34,11 +35,12 @@ test-suite ubjson-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
-                     , hspec
-                     , QuickCheck
-                     , ubjson
                      , bytestring
+                     , containers
+                     , QuickCheck
+                     , hspec
                      , text
+                     , ubjson
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
