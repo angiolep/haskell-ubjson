@@ -12,16 +12,18 @@ module Data.Ubjson (
   )
 where
 
---import           Prelude
+
 import qualified Data.ByteString.Lazy    as L
 import           Data.ByteString.Builder --(Builder, toLazyByteString, charUtf8, word8, int8, int16BE, int32BE, int64BE)
 import           Data.Int                --(Int8, Int16)
 import qualified Data.Map                as M
 import           Data.Monoid             --((<>))
+import qualified Data.String             as S
 import qualified Data.Text               as T
-import           Data.Text.Encoding      --(encodeUtf8Builder)
+import qualified Data.Text.Encoding      as TE
 import           Data.Word               --(Word8)
 
+-- TODO type Encoding = Builder
 
 data Noop = Noop
 
@@ -68,15 +70,24 @@ instance ToUbjson Int where
     | otherwise                  = undefined
 
 
-textToEncoding :: T.Text -> Builder
-textToEncoding x =
-  let b = encodeUtf8Builder x
-      l = (fromIntegral $ L.length $ toLazyByteString b) :: Int
-  in toEncoding l <> b
 
+stringToText :: String -> T.Text
+stringToText str = S.fromString str :: T.Text
+
+
+textToEncoding :: T.Text -> Builder
+textToEncoding txt =
+  let enc = TE.encodeUtf8Builder $ txt
+      len = fromIntegral $ L.length $ toLazyByteString enc :: Int
+  in toEncoding len <> enc
+
+stringToEncoding = textToEncoding . stringToText
+
+instance {-# OVERLAPPING #-} ToUbjson String where
+  toEncoding str = charUtf8 'S' <> stringToEncoding str
 
 instance ToUbjson T.Text where
-  toEncoding x = charUtf8 'S' <> textToEncoding x
+  toEncoding txt = charUtf8 'S' <> textToEncoding txt
 
 
 instance ToUbjson a => ToUbjson (Maybe a) where
@@ -85,7 +96,7 @@ instance ToUbjson a => ToUbjson (Maybe a) where
     Just y  -> toEncoding y
 
 
-instance (ToUbjson a) => ToUbjson [a] where
+instance {-# OVERLAPPABLE #-} (ToUbjson a) => ToUbjson [a] where
   toEncoding [] = charUtf8 '[' <> charUtf8 ']'
   toEncoding xs = charUtf8 '[' <> mconcat (map toEncoding xs) <> charUtf8 ']'
 
@@ -97,13 +108,12 @@ data Ubj = forall a. ToUbjson a => Ubj a
 instance ToUbjson Ubj where
   toEncoding (Ubj a) = toEncoding a
 
--- type Dict v = M.Map T.Text v
+type Dict v = M.Map String v
 
--- instance ToUbjson v => ToUbjson (Dict v) where
-instance ToUbjson v => ToUbjson (M.Map T.Text v) where
+instance ToUbjson v => ToUbjson (Dict v) where
   toEncoding m =
     let s = charUtf8 '{'
-        f b k v = b <> textToEncoding k <> toEncoding v
+        f b k v = b <> stringToEncoding k <> toEncoding v
         e = charUtf8 '}'
     in (M.foldlWithKey f s m) <> e
     -- TODO How about invoking strict fold? Why left and not right?
