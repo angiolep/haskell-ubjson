@@ -79,8 +79,8 @@ import           Data.Word               --(Word8)
 encode :: ToUbjson a => a -> L.ByteString
 encode x = toLazyByteString $ serialize x
 
-decode :: L.ByteString -> a
-decode = undefined
+decode :: L.ByteString -> Maybe a
+decode _ = undefined
 
 -- | Class of types that can be serialized to UBJSON binary strings
 class ToUbjson a where
