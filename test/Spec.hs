@@ -1,3 +1,4 @@
+-- http://dmitry-ra.github.io/ubjson-test-suite/blocks-parser.html
 
 import qualified Data.Text            as T
 import qualified Data.Map             as M
@@ -17,7 +18,7 @@ main = hspec $ do
   describe "Data.Ubjson.encode" $ do
 
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    -- Noop
+    -- noop
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     it "should encode Noop as Ubjson noop" $ do
@@ -26,16 +27,16 @@ main = hspec $ do
 
 
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    -- Null
+    -- null
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    it "should encode Null as Ubjson null" $ do
-      let actual = B.unpack $ encode Null
+    it "should encode (Nothing :: Maybe a) as Ubjson null" $ do
+      let actual = B.unpack $ encode (Nothing :: Maybe String)
       actual `shouldBe` expected [0x5A]
 
 
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    -- Bool
+    -- bool
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     it "should encode (True :: Bool) as Ubjson true" $ do
@@ -48,21 +49,36 @@ main = hspec $ do
 
 
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    -- Char
+    -- char
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    it "should encode ('a' :: Char) as Ubjson char" $ do
-      let actual = B.unpack $ encode 'a'
-      actual `shouldBe`  expected [0x43, 0x61]
+    it "should encode ('h' :: Char) as Ubjson char" $ do
+      let actual = B.unpack $ encode 'h'
+      actual `shouldBe`  expected [0x43, 0x68]
 
 
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    -- Integers
+    -- numbers
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    it "should encode (0 :: Int) as Ubjson uint8" $ do
+      let actual = B.unpack $ encode (0 :: Int)
+      actual `shouldBe` expected [0x55, 0x00]
 
     it "should encode (163 :: Int) as Ubjson uint8" $ do
       let actual = B.unpack $ encode (163 :: Int)
       actual `shouldBe` expected [0x55, 0xA3]
+
+    it "should encode (255 :: Int) as Ubjson uint8" $ do
+      let actual = B.unpack $ encode (255 :: Int)
+      actual `shouldBe` expected [0x55, 0xFF]
+
+
+    -- ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+    it "should encode (-1 :: Int) as Ubjson int8" $ do
+      let actual = B.unpack $ encode (-1 :: Int)
+      actual `shouldBe` expected [0x69, 0xFF]
 
     it "should encode (-93 :: Int) as Ubjson int8" $ do
       let actual = B.unpack $ encode (-93 :: Int)
@@ -72,9 +88,27 @@ main = hspec $ do
       let actual = B.unpack $ encode (256 :: Int)
       actual `shouldBe` expected [0x49, 0x01, 0x00]
 
+
+    -- ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+    it "should encode (-32768 :: Int) as Ubjson int16" $ do
+      let actual = B.unpack $ encode (-32768 :: Int)
+      actual `shouldBe` expected [0x49, 0x80, 0x00]
+
+    it "should encode (-129 :: Int) as Ubjson int16" $ do
+      let actual = B.unpack $ encode (-129 :: Int)
+      actual `shouldBe` expected [0x49, 0xFF, 0x7F]
+
+    it "should encode (256 :: Int) as Ubjson int16" $ do
+      let actual = B.unpack $ encode (256 :: Int)
+      actual `shouldBe` expected [0x49, 0x01, 0x00]
+
     it "should encode (32767 :: Int) as Ubjson int16" $ do
       let actual = B.unpack $ encode (32767 :: Int)
       actual `shouldBe` expected [0x49, 0x7F, 0xFF]
+
+
+    -- ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
     it "should encode (32768 :: Int) as Ubjson int32" $ do
       let actual = B.unpack $ encode (32768 :: Int)
@@ -84,17 +118,45 @@ main = hspec $ do
       let actual = B.unpack $ encode (2147483647 :: Int)
       actual `shouldBe` expected [0x6C, 0x7F, 0xFF, 0xFF, 0xFF]
 
-    it "should encode (2147483648 :: Int) as Ubjson int64" $ do
-      let actual = B.unpack $ encode (2147483648 :: Int)
-      actual `shouldBe` expected [ 0x4C, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00 ]
-
 --    it "should encode (9223372036854775807 :: Int) as Ubjson int64" $ do
 --      let actual = (B.unpack $ encode (9223372036854775807 :: Int))
 --      actual `shouldBe` expected [ 0x4C, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00 ]
 
+    -- TODO add more tests for huge numbers
+
+
+    -- ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+    it "should encode (-NaN :: Float) as Ubjson float32" $ do
+      let actual = B.unpack $ encode (read "-NaN" :: Float)
+      actual `shouldBe` expected [0x64, 0x7F, 0xC0, 0x00, 0x00]
+
+    it "should encode (-Infinity :: Float) as Ubjson float32" $ do
+      let actual = B.unpack $ encode (read "-Infinity" :: Float)
+      actual `shouldBe` expected [0x64, 0xFF, 0x80, 0x00, 0x00]
+
+    it "should encode (0 :: Float) as Ubjson float32" $ do
+      let actual = B.unpack $ encode (0 :: Float)
+      actual `shouldBe` expected [0x64, 0x00, 0x00, 0x00, 0x00]
+
+    it "should encode (0.1 :: Float) as Ubjson float32" $ do
+      let actual = B.unpack $ encode (0.1 :: Float)
+      actual `shouldBe` expected [0x64, 0x3d, 0xcc, 0xcc, 0xcd]
+      -- value actually represented is 0.100000001490116119384765625
+
+    it "should encode (Infinity :: Float) as Ubjson float32" $ do
+      let actual = B.unpack $ encode (read "Infinity" :: Float)
+      actual `shouldBe` expected [0x64, 0x7F, 0x80, 0x00, 0x00 ]
+
+    it "should encode (NaN :: Float) as Ubjson float32" $ do
+      let actual = B.unpack $ encode (read "NaN" :: Float)
+      actual `shouldBe` expected [0x64, 0xFF, 0xC0, 0x00, 0x00]
+
+  -- TODO Add more tests for doubles
+
 
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    -- Strings
+    -- strings
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     it "should encode ['a', 'b', 'c'] as Ubjson string" $ do
@@ -138,9 +200,9 @@ main = hspec $ do
     -- Lists of homogeneous chars, integrals, booleans, etc.
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    it "should encode ([163, -93] :: Int) as Ubjson array" $ do
-      let actual = B.unpack $ encode ([163, -93 :: Int])
-      actual `shouldBe` expected [0x5B, 0x55, 0xA3, 0x69, 0xA3, 0x5D]
+    it "should encode ([163, -93, 256 :: Int]) as Ubjson array" $ do
+      let actual = B.unpack $ encode ([163, -93, 256 :: Int])
+      actual `shouldBe` expected [0x5B, 0x55, 0xA3, 0x69, 0xA3, 0x49, 0x01, 0x00, 0x5D]
 
     it "should encode [True, False, True, True] as Ubjson array" $ do
       let actual = B.unpack $ encode [True, False, True, True]
@@ -152,7 +214,8 @@ main = hspec $ do
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     it "should encode heterogeneous list as Ubjson array" $ do
-      let hlist = [Ubj Noop, Ubj Null, Ubj True, Ubj 'a', Ubj (163 :: Int), Ubj $ T.pack "hello"]
+      let nothing = Nothing :: Maybe Bool
+      let hlist = [Ubj Noop, Ubj nothing, Ubj True, Ubj 'a', Ubj (163 :: Int), Ubj "hello"]
       let actual = B.unpack $ encode hlist
       actual `shouldBe` expected [0x5B, 0x4E, 0x5A, 0x54, 0x43, 0x61, 0x55, 0xA3, 0x53, 0x55, 0x05, 0x68, 0x65, 0x6C, 0x6C, 0x6F, 0x5D]
 

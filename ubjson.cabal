@@ -2,16 +2,28 @@ name:                ubjson
 version:             0.1.0.0
 -- synopsis:
 -- description:
-homepage:            https://github.com/angiolep/haskell-ubjson#readme
+homepage:            https://github.com/angiolep/haskell-ubjson
 license:             BSD3
 license-file:        LICENSE
-author:              Paolo Angioletti
-maintainer:          paolo.angioletti@gmail.com
-copyright:           2017 BitSpoke Ltd
+author:              Paolo Angioletti <paolo.angioletti@gmail.com>
+maintainer:          Paolo Angioletti <paolo.angioletti@gmail.com>
+copyright:           (c) 2017, Paolo Angioletti
+                     (c) 2017, BitSpoke Ltd
 category:            Data
+                   , Serialization
+                   , Network
 build-type:          Simple
+stability:           experiental
+-- TODO tested-with:
 extra-source-files:  README.md
+synopsis:            UBJSON codec
 cabal-version:       >=1.10
+description:
+    This package provides functions to __encode__ (__decode__) some of the most common
+    Haskell data types to (from)  UBJSON - Universal Binary JSON strings.
+    .
+    Please refer to the official UBJSON specification published at http://ubjson.org/
+    for further details about the binary format.
 
 library
   hs-source-dirs:      src
